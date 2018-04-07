@@ -1,0 +1,124 @@
+name: remacs-thibran
+version: master
+summary: Rust port of Emacs
+description: |
+  Remacs is an extensibile, customizable, self-documenting, text editor.
+
+grade: devel         # devel   stable
+confinement: classic # devmode strict classic
+
+# https://docs.snapcraft.io/reference/plugins/common
+
+apps:
+  remacs:
+    command: bin/remacs
+  remacsclient:
+    command: bin/remacsclient
+
+version-script: |
+  cd parts/remacs/src
+  GIT_COMMIT=$(git rev-parse HEAD | cut -c1-8)
+  cd $SNAPCRAFT_STAGE/src
+  VERSION=$(./remacs --version | head -n 1 | cut -d ' ' -f3)
+  echo "$VERSION-$GIT_COMMIT"
+
+parts:
+  rustup:
+    plugin: nil
+    build: |
+      wget https://static.rust-lang.org/rustup.sh
+      chmod u+x rustup.sh
+
+      ./rustup.sh \
+        --prefix=$PWD \
+        --channel=nightly \
+        --disable-sudo \
+        --disable-ldconfig \
+        --save
+      # export PATH=$PATH:$PWD/bin
+      # echo $PATH > __rustup_path_output__
+
+  remacs:
+    plugin: nil
+    source: "https://github.com/Wilfred/remacs.git"
+    build-packages:
+      - automake
+      - build-essential
+      - texinfo
+      - libjpeg-dev
+      - libtiff5-dev
+      - libgif-dev
+      - libxpm-dev
+      - libgtk-3-dev
+      - libgnutls-dev
+      - libncurses5-dev
+      - libxml2-dev
+
+    build: |
+      export PATH=$PATH:$PWD/../../rustup/build/bin
+      ./autogen.sh
+      ./configure --without-pop --prefix=/snap/remacs-thibran/current
+      make -j $(getconf _NPROCESSORS_ONLN)
+
+    install: |
+      export REMACS_VERSION=$(src/remacs --version | head -n 1 | cut -d ' ' -f3)
+      export TARGET_TRIPLET=$(/usr/share/automake-1.15/config.guess)
+      export ROOT_DIR_REMACS="/snap/remacs-thibran/current"
+
+      strip --strip-all src/remacs
+      strip --strip-all lib-src/ctags
+      strip --strip-all lib-src/ebrowse
+      strip --strip-all lib-src/etags
+      strip --strip-all lib-src/hexl
+      strip --strip-all lib-src/make-docfile
+      strip --strip-all lib-src/movemail
+      strip --strip-all lib-src/profile
+      strip --strip-all lib-src/remacsclient
+
+      mv CONTRIBUTORS $SNAPCRAFT_PART_INSTALL
+      mv COPYING $SNAPCRAFT_PART_INSTALL
+
+      mkdir -p $SNAPCRAFT_PART_INSTALL/src/bitmaps
+      mv src/bitmaps/* $SNAPCRAFT_PART_INSTALL/src/bitmaps
+      mv src/remacs $SNAPCRAFT_PART_INSTALL/src
+
+      export LIBEXEC_PATH=$SNAPCRAFT_PART_INSTALL/libexec/remacs/$REMACS_VERSION/$TARGET_TRIPLET
+      mkdir -p $LIBEXEC_PATH
+      mv lib-src/COPYING $LIBEXEC_PATH
+      mv lib-src/rcs2log $LIBEXEC_PATH
+      mv lib-src/ctags $LIBEXEC_PATH
+      mv lib-src/ebrowse $LIBEXEC_PATH
+      mv lib-src/etags $LIBEXEC_PATH
+      mv lib-src/hexl $LIBEXEC_PATH
+      mv lib-src/make-docfile $LIBEXEC_PATH
+      mv lib-src/movemail $LIBEXEC_PATH
+      mv lib-src/profile $LIBEXEC_PATH
+      mv lib-src/remacsclient $LIBEXEC_PATH
+
+      mkdir -p $SNAPCRAFT_PART_INSTALL/share/remacs/$REMACS_VERSION
+      mv lisp $SNAPCRAFT_PART_INSTALL/share/remacs/$REMACS_VERSION
+      mv etc $SNAPCRAFT_PART_INSTALL/share/remacs/$REMACS_VERSION
+
+      mv info $SNAPCRAFT_PART_INSTALL/info
+
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      echo "#!/bin/sh\n$ROOT_DIR_REMACS/src/remacs \$@" > \
+        $SNAPCRAFT_PART_INSTALL/bin/remacs
+      echo "#!/bin/sh\n$ROOT_DIR_REMACS/libexec/remacs/$REMACS_VERSION/$TARGET_TRIPLET/remacsclient \$@" > \
+        $SNAPCRAFT_PART_INSTALL/bin/remacsclient
+      
+      chmod a+rx $SNAPCRAFT_PART_INSTALL/bin/remacs
+      chmod a+rx $SNAPCRAFT_PART_INSTALL/bin/remacsclient
+
+    stage:
+      - COPYING
+      - CONTRIBUTORS
+      - src
+      - libexec
+      - share
+      - info
+      - bin
+
+    after: 
+      - rustup
+      - desktop-gtk3
