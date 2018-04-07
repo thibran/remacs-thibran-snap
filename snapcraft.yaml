@@ -53,6 +53,7 @@ parts:
       - libgnutls-dev
       - libncurses5-dev
       - libxml2-dev
+      - wget
 
     build: |
       export PATH=$PATH:$PWD/../../rustup/build/bin
