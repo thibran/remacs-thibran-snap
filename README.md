@@ -28,7 +28,7 @@ The `--dangerous` is necessary because the local build snap is not signed by the
 Run
 ---
 
-To ignore `.emacs.d`, start the snap with `-q`:
+To ignore the init files of `.emacs.d`, start the app with `-q`:
 
     remacs-thibran.remacs -q
 

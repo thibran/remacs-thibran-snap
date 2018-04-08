@@ -4,8 +4,9 @@ summary: Rust port of Emacs
 description: |
   Remacs is an extensibile, customizable, self-documenting, text editor.
 
-grade: devel         # devel   stable
-confinement: classic # devmode strict classic
+grade: devel                 # devel stable
+confinement: classic         # devmode strict classic
+architectures: [amd64, i386] # armhf arm64
 
 # https://docs.snapcraft.io/reference/plugins/common
 
@@ -17,7 +18,7 @@ apps:
 
 version-script: |
   cd parts/remacs/src
-  GIT_COMMIT=$(git rev-parse HEAD | cut -c1-8)
+  GIT_COMMIT=$(git rev-parse HEAD | cut -c1-7)
   cd $SNAPCRAFT_STAGE/src
   VERSION=$(./remacs --version | head -n 1 | cut -d ' ' -f3)
   echo "$VERSION-$GIT_COMMIT"
@@ -60,7 +61,7 @@ parts:
       export PATH=$PATH:$PWD/../../rustup/build/bin
       ./autogen.sh
       ./configure --without-pop --prefix=/snap/remacs-thibran/current
-      make -j $(getconf _NPROCESSORS_ONLN)
+      make -j $(nproc)
 
     install: |
       export REMACS_VERSION=$(src/remacs --version | head -n 1 | cut -d ' ' -f3)
