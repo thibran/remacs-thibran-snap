@@ -54,6 +54,7 @@ parts:
       - libncurses5-dev
       - libxml2-dev
       - curl
+      - file
 
     build: |
       export PATH=$PATH:$PWD/../../rustup/build/bin
