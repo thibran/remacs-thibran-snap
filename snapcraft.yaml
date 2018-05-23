@@ -33,6 +33,7 @@ parts:
       ./rustup.sh \
         --prefix=$PWD \
         --channel=nightly \
+        --date=2018-02-08 \
         --disable-sudo \
         --disable-ldconfig \
         --save
